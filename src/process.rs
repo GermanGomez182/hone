@@ -129,7 +129,7 @@ mod tests {
 
     #[test]
     fn missing_program_is_not_found() {
-        let result = SystemRunner.run("polish-definitely-missing-binary", &[], "", GENEROUS);
+        let result = SystemRunner.run("hone-definitely-missing-binary", &[], "", GENEROUS);
         assert_eq!(result, Err(RunError::NotFound));
     }
 

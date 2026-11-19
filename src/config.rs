@@ -2,9 +2,9 @@ use std::time::Duration;
 
 use crate::rewriter::ClaudeConfig;
 
-pub const PROGRAM_VAR: &str = "POLISH_CLAUDE_BIN";
-pub const MODEL_VAR: &str = "POLISH_MODEL";
-pub const TIMEOUT_VAR: &str = "POLISH_TIMEOUT_SECS";
+pub const PROGRAM_VAR: &str = "HONE_CLAUDE_BIN";
+pub const MODEL_VAR: &str = "HONE_MODEL";
+pub const TIMEOUT_VAR: &str = "HONE_TIMEOUT_SECS";
 
 const DEFAULT_PROGRAM: &str = "claude";
 const DEFAULT_MODEL: &str = "haiku";

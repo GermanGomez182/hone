@@ -8,12 +8,12 @@ use eframe::egui::{
     ViewportCommand,
 };
 
-use polish::clipboard::copy_text;
-use polish::mode::Mode;
-use polish::process::SystemRunner;
-use polish::rewriter::ClaudeCli;
-use polish::state::{AppState, Effect, Status};
-use polish::theme::{Palette, Rgb};
+use hone::clipboard::copy_text;
+use hone::mode::Mode;
+use hone::process::SystemRunner;
+use hone::rewriter::ClaudeCli;
+use hone::state::{AppState, Effect, Status};
+use hone::theme::{Palette, Rgb};
 
 type RewriteResult = Result<String, String>;
 
@@ -25,7 +25,7 @@ const GAP: f32 = 8.0;
 const SECTION_LABEL_HEIGHT: f32 = 22.0;
 const HINTS: &str = "Ctrl+Enter  rewrite / copy & close     Ctrl+1/2  mode     Esc  close";
 
-pub struct PolishApp {
+pub struct HoneApp {
     state: AppState,
     rewriter: Arc<ClaudeCli<SystemRunner>>,
     results_tx: Sender<RewriteResult>,
@@ -34,7 +34,7 @@ pub struct PolishApp {
     focus_input: bool,
 }
 
-impl PolishApp {
+impl HoneApp {
     pub fn new(
         cc: &eframe::CreationContext<'_>,
         initial_input: String,
@@ -125,7 +125,7 @@ impl PolishApp {
 
     fn header(&mut self, ui: &mut egui::Ui) {
         ui.horizontal(|ui| {
-            ui.label(RichText::new("Polish").strong().size(BODY_SIZE + 3.0));
+            ui.label(RichText::new("Hone").strong().size(BODY_SIZE + 3.0));
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                 for (index, mode) in Mode::ALL.iter().enumerate().rev() {
                     let label = format!("{}  Ctrl+{}", mode.label(), index + 1);
@@ -199,7 +199,7 @@ impl PolishApp {
     }
 }
 
-impl eframe::App for PolishApp {
+impl eframe::App for HoneApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         self.receive_results();
         self.handle_shortcuts(ctx);

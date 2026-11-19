@@ -51,7 +51,7 @@ impl fmt::Display for RewriteError {
             RewriteError::EmptyInput => write!(f, "Nothing to rewrite: the input is empty."),
             RewriteError::NotInstalled { program } => write!(
                 f,
-                "Could not run `{program}`: it is not on PATH. Install Claude Code or set POLISH_CLAUDE_BIN."
+                "Could not run `{program}`: it is not on PATH. Install Claude Code or set HONE_CLAUDE_BIN."
             ),
             RewriteError::TimedOut { after } => {
                 write!(

@@ -111,7 +111,7 @@ mod tests {
     #[test]
     #[ignore = "touches the real Wayland clipboard; run with --ignored inside a session"]
     fn round_trips_through_the_real_clipboard() {
-        copy_text("polish round trip ñ").unwrap();
-        assert_eq!(paste_text().unwrap(), Some("polish round trip ñ".into()));
+        copy_text("hone round trip ñ").unwrap();
+        assert_eq!(paste_text().unwrap(), Some("hone round trip ñ".into()));
     }
 }

@@ -5,18 +5,18 @@ use std::process::ExitCode;
 
 use eframe::egui::ViewportBuilder;
 
-use polish::clipboard::paste_text;
-use polish::config::claude_config;
-use polish::process::SystemRunner;
-use polish::rewriter::ClaudeCli;
-use polish::theme::{Palette, load_palette};
+use hone::clipboard::paste_text;
+use hone::config::claude_config;
+use hone::process::SystemRunner;
+use hone::rewriter::ClaudeCli;
+use hone::theme::{Palette, load_palette};
 
 /// Wayland app id; the Hyprland window rule matches on it.
-const APP_ID: &str = "polish";
+const APP_ID: &str = "hone";
 const WINDOW_SIZE: [f32; 2] = [760.0, 540.0];
 const THEME_COLORS: &str = ".local/state/omarchy/current/theme/colors.toml";
 /// Dependencies (zbus, wgpu) are chatty at info; keep their warnings only.
-const LOG_FILTER: &str = "warn,polish=info";
+const LOG_FILTER: &str = "warn,hone=info";
 
 fn main() -> ExitCode {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or(LOG_FILTER))
@@ -42,7 +42,7 @@ fn main() -> ExitCode {
     let options = eframe::NativeOptions {
         viewport: ViewportBuilder::default()
             .with_app_id(APP_ID)
-            .with_title("Polish")
+            .with_title("Hone")
             .with_inner_size(WINDOW_SIZE),
         ..Default::default()
     };
@@ -50,7 +50,7 @@ fn main() -> ExitCode {
         APP_ID,
         options,
         Box::new(move |cc| {
-            Ok(Box::new(app::PolishApp::new(
+            Ok(Box::new(app::HoneApp::new(
                 cc,
                 initial_input,
                 rewriter,
