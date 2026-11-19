@@ -328,7 +328,6 @@ Item {
 
             Button {
               text: root.languageLabel(root.flow.language)
-              tooltipText: "Ctrl+L"
               fontFamily: root.fontFamily
               bordered: true
               onClicked: root.apply(PanelState.setLanguage(root.flow, PanelState.cycled(root.languages, root.flow.language)))
@@ -337,7 +336,6 @@ Item {
             Button {
               id: providerButton
               text: Providers.LABELS[root.flow.provider]
-              tooltipText: "Ctrl+P"
               fontFamily: root.fontFamily
               bordered: true
               onClicked: root.apply(PanelState.setProvider(root.flow, PanelState.cycled(Config.PROVIDERS, root.flow.provider)))
@@ -357,7 +355,6 @@ Item {
               required property var modelData
               required property int index
               text: (index + 1) + "  " + modelData.label
-              tooltipText: "Alt+" + (index + 1)
               fontFamily: root.fontFamily
               selected: root.flow.actionIndex === index
               onClicked: root.apply(PanelState.setAction(root.flow, index))
@@ -454,25 +451,25 @@ Item {
 
             Button {
               visible: root.running
-              text: strings.t("button.cancel")
+              text: strings.t("button.cancel") + "  Esc"
               fontFamily: root.fontFamily
               onClicked: root.apply(PanelState.escape(root.flow))
             }
             Button {
               visible: root.hasResult
-              text: strings.t("button.useAsInput")
+              text: strings.t("button.useAsInput") + "  Ctrl+U"
               fontFamily: root.fontFamily
               onClicked: root.apply(PanelState.useAsInput(root.flow))
             }
             Button {
               visible: root.hasResult || root.flow.status === "failed"
-              text: strings.t("button.retry")
+              text: strings.t("button.retry") + "  Ctrl+R"
               fontFamily: root.fontFamily
               onClicked: root.apply(PanelState.retry(root.flow))
             }
             Button {
               visible: root.hasResult
-              text: strings.t("button.copy")
+              text: strings.t("button.copy") + "  Ctrl+Shift+C"
               fontFamily: root.fontFamily
               bordered: true
               onClicked: root.apply(PanelState.copy(root.flow, root.config.closeOnCopy))
