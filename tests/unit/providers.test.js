@@ -104,20 +104,8 @@ test("lines that are not JSON are ignored", () => {
   assert.equal(Providers.parseLine("codex", ""), null)
 })
 
-test("output cleanup trims and strips a wrapping code fence", () => {
-  assert.equal(Providers.cleanOutput("  hi.\n"), "hi.")
-  assert.equal(Providers.cleanOutput("```text\nhi.\n```"), "hi.")
-  assert.equal(Providers.cleanOutput("line one\n\nline two"), "line one\n\nline two")
-})
 
-test("output cleanup strips text tags echoed back by the model", () => {
-  assert.equal(Providers.cleanOutput("<text>\nhi.\n</text>"), "hi.")
-})
 
-test("empty output cleans to an empty string", () => {
-  assert.equal(Providers.cleanOutput(" \n"), "")
-  assert.equal(Providers.cleanOutput("```\n```"), "")
-})
 
 test("a missing binary names the provider and the binary", () => {
   assert.deepEqual(Providers.notInstalled("codex", "codex"), { key: "error.notInstalled", args: ["Codex", "codex"] })

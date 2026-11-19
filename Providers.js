@@ -5,7 +5,6 @@
 var LABELS = { claude: "Claude Code", codex: "Codex" }
 var LOGIN_COMMANDS = { claude: "claude auth login", codex: "codex login" }
 var NO_DETAIL = "no output"
-var FENCE = "```"
 
 var AUTH_FAILURE = /not logged in|\/login|log in|unauthori[sz]ed|\b401\b|api key|authenticat|credential/i
 var NETWORK_FAILURE = /ENOTFOUND|EAI_AGAIN|ECONNREFUSED|ECONNRESET|ETIMEDOUT|getaddrinfo|network is unreachable/i
@@ -64,21 +63,6 @@ function codexEvent(record) {
   return null
 }
 
-function cleanOutput(raw) {
-  return stripWrapper(stripWrapper(String(raw).trim(), FENCE, FENCE, true), "<text>", "</text>", false)
-}
-
-function stripWrapper(text, open, close, dropFirstLine) {
-  if (text.indexOf(open) !== 0 || text.length < open.length + close.length
-      || text.lastIndexOf(close) !== text.length - close.length) return text
-  var inner = text.slice(open.length, text.length - close.length)
-  if (dropFirstLine) {
-    var newline = inner.indexOf("\n")
-    inner = newline < 0 ? inner : inner.slice(newline + 1)
-  }
-  return inner.trim()
-}
-
 function notInstalled(provider, binary) {
   return { key: "error.notInstalled", args: [LABELS[provider], binary] }
 }
@@ -102,7 +86,6 @@ if (typeof module !== "undefined") {
     LABELS: LABELS,
     command: command,
     parseLine: parseLine,
-    cleanOutput: cleanOutput,
     notInstalled: notInstalled,
     failure: failure
   }
