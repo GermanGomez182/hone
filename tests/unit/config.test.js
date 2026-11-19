@@ -140,8 +140,9 @@ test("action ids must be unique", () => {
   assert.match(errorOf({ actions: twice }), /duplicate action id "x"/)
 })
 
-test("the default file round-trips through the parser", () => {
-  assert.deepEqual(Config.parseConfig(Config.defaultConfigText()).config, Config.defaultConfig())
+test("the first-run file holds no settings, so later default changes still apply", () => {
+  assert.equal(Config.initialConfigText(), "{}\n")
+  assert.deepEqual(Config.parseConfig(Config.initialConfigText()), { config: Config.defaultConfig(), error: "" })
 })
 
 test("the remembered provider is read back from the state file", () => {

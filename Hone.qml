@@ -188,8 +188,8 @@ Item {
         console.warn("hone: cannot read " + root.configPath + ": error " + error)
         return
       }
-      console.info("hone: writing default config to " + root.configPath)
-      configFile.setText(Config.defaultConfigText())
+      console.info("hone: creating an empty config at " + root.configPath)
+      configFile.setText(Config.initialConfigText())
     }
   }
 

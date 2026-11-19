@@ -46,9 +46,18 @@ Pressing the key again closes the panel. After `omarchy plugin update hone`, run
 
 ## Configure
 
-Hone writes its defaults to `~/.config/hone/config.json` the first time it loads.
-Edit it and the panel picks the change up on save. Unknown keys and wrong types
-are reported in the panel rather than ignored.
+Hone creates an empty `~/.config/hone/config.json` (`{}`) the first time it
+loads. Add only the settings you want to change; everything you leave out uses
+the defaults below, including improved defaults in later versions. The panel
+picks up changes on save. Unknown keys and wrong types are reported in the panel
+rather than ignored.
+
+```json
+{
+  "language": "Spanish",
+  "providers": { "claude": { "model": "sonnet" } }
+}
+```
 
 | Setting | Default | Meaning |
 | --- | --- | --- |

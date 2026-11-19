@@ -44,8 +44,10 @@ function defaultConfig() {
   return JSON.parse(JSON.stringify(DEFAULTS))
 }
 
-function defaultConfigText() {
-  return JSON.stringify(DEFAULTS, null, 2) + "\n"
+// What Hone writes on first run: no settings at all. Every key the user
+// leaves out falls back to DEFAULTS, so improved defaults reach them too.
+function initialConfigText() {
+  return "{}\n"
 }
 
 // Returns { config, error }: exactly one of them is set.
@@ -174,7 +176,7 @@ if (typeof module !== "undefined") {
     PROVIDERS: PROVIDERS,
     AUTO_LANGUAGE: AUTO_LANGUAGE,
     defaultConfig: defaultConfig,
-    defaultConfigText: defaultConfigText,
+    initialConfigText: initialConfigText,
     parseConfig: parseConfig,
     stateText: stateText,
     rememberedProvider: rememberedProvider
