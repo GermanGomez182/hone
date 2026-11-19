@@ -391,7 +391,35 @@ Item {
           }
         }
 
-        SectionText { id: resultLabel; text: strings.t("section.result"); fontName: root.fontFamily }
+        // The result title shares its line with the keyboard hint, which has
+        // the whole width here instead of competing with the buttons below.
+        Item {
+          id: resultLabel
+          width: parent.width
+          height: Math.max(resultTitle.implicitHeight, hint.implicitHeight)
+
+          SectionText {
+            id: resultTitle
+            anchors.left: parent.left
+            anchors.verticalCenter: parent.verticalCenter
+            text: strings.t("section.result")
+            fontName: root.fontFamily
+          }
+
+          SectionText {
+            id: hint
+            anchors.left: resultTitle.right
+            anchors.leftMargin: root.gap
+            anchors.right: parent.right
+            anchors.verticalCenter: parent.verticalCenter
+            horizontalAlignment: Text.AlignRight
+            elide: Text.ElideLeft
+            fontName: root.fontFamily
+            text: root.running ? strings.t("hint.running")
+              : root.hasResult ? strings.t(root.config.pasteBack ? "hint.doneReplace" : "hint.done")
+              : strings.t("hint.idle").arg(root.config.actions.length)
+          }
+        }
 
         Item {
           width: parent.width
@@ -424,19 +452,19 @@ Item {
         Item {
           id: footer
           width: parent.width
-          height: Math.max(hint.implicitHeight, buttons.implicitHeight)
+          // Sized by a button even when none is shown, so the editors above
+          // keep their height as buttons come and go.
+          height: Math.max(noticeText.implicitHeight, copyButton.implicitHeight)
 
           Text {
-            id: hint
+            id: noticeText
             textFormat: Text.PlainText
             anchors.left: parent.left
             anchors.right: buttons.left
             anchors.rightMargin: root.gap
             anchors.verticalCenter: parent.verticalCenter
-            text: root.notice ? root.notice.text
-              : root.running ? strings.t("hint.running")
-              : root.hasResult ? strings.t(root.config.pasteBack ? "hint.doneReplace" : "hint.done")
-              : strings.t("hint.idle").arg(root.config.actions.length)
+            visible: root.notice !== null
+            text: root.notice ? root.notice.text : ""
             color: root.notice && root.notice.error ? Commons.Color.urgent : Commons.Color.muted
             elide: Text.ElideRight
             font.family: root.fontFamily
@@ -468,6 +496,7 @@ Item {
               onClicked: root.apply(PanelState.retry(root.flow))
             }
             Button {
+              id: copyButton
               visible: root.hasResult
               text: strings.t("button.copy") + "  Ctrl+Shift+C"
               fontFamily: root.fontFamily
