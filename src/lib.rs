@@ -1,3 +1,4 @@
+pub mod clipboard;
 pub mod mode;
 pub mod output;
 pub mod process;
