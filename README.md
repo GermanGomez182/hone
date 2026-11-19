@@ -1,11 +1,12 @@
 # Hone
 
 An [Omarchy](https://omarchy.org) overlay that polishes text before you send it.
-Press a hotkey, the text you just copied is already there, pick an action, and
-Claude Code or Codex rewrites it. Copy the result and paste it into Slack, email,
-a PR, anywhere.
+Select the text in any app (Slack, email, a PR, a terminal), press the hotkey,
+press `Ctrl+Enter` twice, and Claude Code or Codex's rewrite replaces your
+selection in place.
 
-- **Actions**: Grammar, Formalize, Slack, Email out of the box, and your own in the config.
+- **Replace in place**: the result is pasted over your selection, and stays on the clipboard as a fallback.
+- **Actions**: Chat, Grammar, Formalize, Email out of the box, and your own in the config.
 - **Extra instruction** for one-off tweaks ("keep it under 50 words").
 - **Language**: keep the input's language, or force English, Spanish, or any language you add.
 - **Claude Code or Codex**, using the CLI you are already signed in to. No API keys.
@@ -27,13 +28,14 @@ Then bind a key in `~/.config/hypr/bindings.lua`:
 o.bind("SUPER + CTRL + G", "Hone", { panel = "hone" })
 ```
 
-Pressing the key again closes the panel.
+Pressing the key again closes the panel. After `omarchy plugin update hone`, run
+`omarchy restart shell` so the shell picks up the new code.
 
 ## Use
 
 | Key | Does |
 | --- | --- |
-| `Ctrl+Enter` | Run the action; once there is a result, copy it and close |
+| `Ctrl+Enter` | Run the action; once there is a result, close and paste it over your selection |
 | `Alt+1` ... `Alt+9` | Pick an action |
 | `Ctrl+L` | Cycle the output language |
 | `Ctrl+P` | Switch between Claude Code and Codex (remembered) |
@@ -53,7 +55,8 @@ are reported in the panel rather than ignored.
 | `provider` | `"claude"` | `"claude"` or `"codex"`; the last one picked with `Ctrl+P` wins |
 | `language` | `"auto"` | `"auto"` keeps the input's language, or one of `languages` |
 | `languages` | `["English", "Spanish"]` | What `Ctrl+L` cycles through after auto |
-| `prefillClipboard` | `true` | Start with the clipboard text |
+| `prefill` | `"auto"` | Start with the selection (`"auto"` falls back to the clipboard), `"selection"`, `"clipboard"` or `"none"` |
+| `pasteBack` | `true` | `Ctrl+Enter` pastes the result over your selection; `false` only copies it |
 | `closeOnCopy` | `false` | Close after `Ctrl+Shift+C` (`Ctrl+Enter` always closes) |
 | `timeoutSeconds` | `60` | Give up after this long (1 to 600) |
 | `providers.claude` | `claude`, model `haiku` | `binary`, `model` (empty = the CLI's default), `extraArgs` |
@@ -66,6 +69,15 @@ Example action:
 ```json
 { "id": "pr", "label": "PR comment", "prompt": "Rewrite as a short, kind code review comment." }
 ```
+
+## How replacing works
+
+Hone reads your selection through Wayland's primary selection, so there is no
+need to copy first. On accept it puts the result on the clipboard, closes, and
+once Hyprland has returned focus to your app it sends `Shift+Insert`, the same
+way Omarchy's emoji picker inserts emoji. If the app dropped its selection, the
+result is inserted at the cursor instead, and it is always left on the
+clipboard so you can paste it by hand.
 
 ## Privacy
 

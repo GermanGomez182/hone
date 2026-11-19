@@ -31,6 +31,7 @@ Item {
   property string rememberedProvider: ""
   property var flow: PanelState.initial(Config.defaultConfig().provider, Config.defaultConfig().language)
   property var notice: null
+  property int prefillPending: 0
 
   readonly property var languages: [Config.AUTO_LANGUAGE].concat(root.config.languages)
   readonly property bool running: root.flow.status === "running"
@@ -47,6 +48,8 @@ Item {
   readonly property int contentMargin: Style.spacing.panelPadding
   readonly property int gap: Style.spacing.controlGap
   readonly property int cardWidth: Math.min(Style.space(760), panel.width - Style.gapsOut * 2)
+  // Long enough for Hyprland to hand focus back to the window the text came from.
+  readonly property int focusReturnMs: 150
   readonly property int cardHeight: Math.min(Style.space(600), panel.height - Style.gapsOut * 2)
 
   Commons.Translations { id: strings; directory: Qt.resolvedUrl("i18n") }
@@ -55,7 +58,7 @@ Item {
     root.opened = true
     root.notice = null
     root.apply(PanelState.opened(root.flow, ""))
-    if (root.config.prefillClipboard) paste.running = true
+    root.readPrefill()
     Qt.callLater(function() { input.focusText() })
   }
 
@@ -85,7 +88,7 @@ Item {
   function perform(effect) {
     if (effect.type === "run") root.startRun(effect.runId, effect.job)
     else if (effect.type === "cancel") backend.cancel()
-    else if (effect.type === "copy") root.copyText(effect.text, effect.close)
+    else if (effect.type === "copy") root.copyText(effect.text, effect.close, effect.paste)
     else if (effect.type === "close") root.dismiss()
     else if (effect.type === "rememberProvider") stateFile.setText(Config.stateText(effect.provider))
   }
@@ -99,16 +102,38 @@ Item {
     backend.run(runId, job.provider, root.config.providers[job.provider], prompt, root.config.timeoutSeconds)
   }
 
-  function copyText(text, closeAfter) {
+  function copyText(text, closeAfter, pasteAfter) {
     copier.pendingText = text
-    copier.closeAfter = closeAfter
+    copier.closeAfter = closeAfter || pasteAfter
+    copier.pasteAfter = pasteAfter
     copier.running = true
   }
 
   function submit() {
     if (root.configError) return
     root.notice = null
-    root.apply(PanelState.submit(root.flow))
+    root.apply(PanelState.submit(root.flow, root.config.pasteBack))
+  }
+
+  // Reads the selection and/or the clipboard, as the prefill setting asks,
+  // and lets PanelState pick once every reader has answered.
+  function readPrefill() {
+    var source = root.config.prefill
+    var readers = []
+    if (source === "auto" || source === "selection") readers.push(selectionReader)
+    if (source === "auto" || source === "clipboard") readers.push(clipboardReader)
+    root.prefillPending = readers.length
+    for (var i = 0; i < readers.length; i++) {
+      readers[i].text = ""
+      readers[i].running = true
+    }
+  }
+
+  function prefillRead() {
+    root.prefillPending -= 1
+    if (root.prefillPending > 0) return
+    var text = PanelState.prefillText(root.config.prefill, selectionReader.text, clipboardReader.text)
+    if (root.flow.status === "idle" && root.flow.input === "") root.apply(PanelState.editInput(root.flow, text))
   }
 
   function loadConfig(text) {
@@ -178,20 +203,14 @@ Item {
     }
   }
 
-  Process {
-    id: paste
-    command: ["wl-paste", "--no-newline", "--type", "text"]
-    stdout: StdioCollector {
-      onStreamFinished: {
-        if (root.flow.status === "idle" && root.flow.input === "") root.apply(PanelState.editInput(root.flow, text))
-      }
-    }
-  }
+  ClipboardReader { id: selectionReader; primary: true; onRead: root.prefillRead() }
+  ClipboardReader { id: clipboardReader; primary: false; onRead: root.prefillRead() }
 
   Process {
     id: copier
     property string pendingText: ""
     property bool closeAfter: false
+    property bool pasteAfter: false
     command: ["wl-copy"]
     stdinEnabled: true
     onStarted: {
@@ -207,7 +226,31 @@ Item {
       }
       if (copier.closeAfter) root.dismiss()
       else root.notice = { error: false, text: strings.t("notice.copied") }
+      if (copier.pasteAfter) pasteDelay.start()
     }
+  }
+
+  // Paste back the way Omarchy's emoji picker inserts: once the panel is gone
+  // and Hyprland has returned focus to the previous window, Shift+Insert
+  // pastes over its selection in browsers, editors and terminals alike. The
+  // result also stays on the clipboard in case the selection was lost.
+  Timer {
+    id: pasteDelay
+    interval: root.focusReturnMs
+    onTriggered: paster.running = true
+  }
+
+  Process {
+    id: paster
+    property bool started: false
+    command: ["wtype", "-M", "shift", "-k", "Insert", "-m", "shift"]
+    onStarted: paster.started = true
+    onExited: function(exitCode) {
+      paster.started = false
+      if (exitCode !== 0) console.warn("hone: paste-back failed: wtype exited with " + exitCode)
+      else console.info("hone: pasted the result back")
+    }
+    onRunningChanged: if (!running && !paster.started) console.warn("hone: paste-back failed: wtype is not installed")
   }
 
   HoneBackend {
@@ -393,7 +436,7 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             text: root.notice ? root.notice.text
               : root.running ? strings.t("hint.running")
-              : root.hasResult ? strings.t("hint.done")
+              : root.hasResult ? strings.t(root.config.pasteBack ? "hint.doneReplace" : "hint.done")
               : strings.t("hint.idle").arg(root.config.actions.length)
             color: root.notice && root.notice.error ? Commons.Color.urgent : Commons.Color.muted
             elide: Text.ElideRight
@@ -434,6 +477,23 @@ Item {
             }
           }
         }
+      }
+    }
+  }
+
+  // Reads the clipboard, or the primary selection (whatever is highlighted
+  // right now), as plain text. Emits read() even when there is nothing.
+  component ClipboardReader: Process {
+    id: reader
+    property bool primary: false
+    property string text: ""
+    signal read()
+    command: primary ? ["wl-paste", "--primary", "--no-newline", "--type", "text"]
+                     : ["wl-paste", "--no-newline", "--type", "text"]
+    stdout: StdioCollector {
+      onStreamFinished: {
+        reader.text = text
+        reader.read()
       }
     }
   }

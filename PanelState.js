@@ -3,7 +3,8 @@
 // at most one side effect for the QML shell to perform:
 //   { type: "run", runId, job }     start the agent CLI
 //   { type: "cancel" }              stop the running CLI
-//   { type: "copy", text, close }   put text on the clipboard
+//   { type: "copy", text, close, paste }  put text on the clipboard, and with
+//                                         paste, paste it over the source selection
 //   { type: "close" }               hide the panel
 //   { type: "rememberProvider", provider }
 
@@ -59,15 +60,25 @@ function choose(state, field, value, effect) {
   return { state: invalidated(update(state, changes)), effect: effect }
 }
 
-function submit(state) {
+function submit(state, pasteBack) {
   if (state.status === "running") return unchanged(state)
-  if (state.status === "done") return { state: state, effect: { type: "copy", text: state.result, close: true } }
+  if (state.status === "done")
+    return { state: state, effect: { type: "copy", text: state.result, close: true, paste: pasteBack } }
   return start(state)
 }
 
 function copy(state, closeOnCopy) {
   if (state.status !== "done") return unchanged(state)
-  return { state: state, effect: { type: "copy", text: state.result, close: closeOnCopy } }
+  return { state: state, effect: { type: "copy", text: state.result, close: closeOnCopy, paste: false } }
+}
+
+// The text the panel opens with. "auto" prefers the current selection so
+// the user can select and press the hotkey without copying first.
+function prefillText(source, selection, clipboard) {
+  if (source === "selection") return selection
+  if (source === "clipboard") return clipboard
+  if (source === "auto") return String(selection).trim() ? selection : clipboard
+  return ""
 }
 
 function retry(state) {
@@ -181,6 +192,7 @@ if (typeof module !== "undefined") {
     delta: delta,
     finished: finished,
     cycled: cycled,
+    prefillText: prefillText,
     cleanOutput: cleanOutput
   }
 }

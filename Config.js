@@ -6,12 +6,14 @@ var PROVIDERS = ["claude", "codex"]
 var AUTO_LANGUAGE = "auto"
 var MAX_ACTIONS = 9
 var MAX_TIMEOUT_SECONDS = 600
+var PREFILL_SOURCES = ["auto", "selection", "clipboard", "none"]
 
 var DEFAULTS = {
   provider: "claude",
   language: AUTO_LANGUAGE,
   languages: ["English", "Spanish"],
-  prefillClipboard: true,
+  prefill: "auto",
+  pasteBack: true,
   closeOnCopy: false,
   timeoutSeconds: 60,
   providers: {
@@ -23,12 +25,12 @@ var DEFAULTS = {
     + "no explanations, no <text> tags. Preserve meaning, names, @mentions, links, code and line breaks "
     + "unless the task says otherwise. Write the result in {language}.",
   actions: [
+    { id: "chat", label: "Chat",
+      prompt: "Rewrite as a concise, friendly chat message. Short paragraphs, no greeting fluff." },
     { id: "grammar", label: "Grammar",
       prompt: "Fix grammar, spelling, punctuation and capitalization. Keep the tone and wording otherwise unchanged." },
     { id: "formal", label: "Formalize",
       prompt: "Rewrite in a clear, professional, formal register." },
-    { id: "slack", label: "Slack",
-      prompt: "Rewrite as a concise, friendly Slack message. Short paragraphs, no greeting fluff." },
     { id: "email", label: "Email",
       prompt: "Rewrite as a clear professional email with a greeting, body and sign-off." }
   ]
@@ -98,7 +100,8 @@ function validate(config) {
   if (!isNameList(config.languages)) return "\"languages\" must be a non-empty list of language names"
   if (config.language !== AUTO_LANGUAGE && config.languages.indexOf(config.language) < 0)
     return "\"language\" must be \"auto\" or one of \"languages\""
-  if (typeof config.prefillClipboard !== "boolean") return "\"prefillClipboard\" must be true or false"
+  if (PREFILL_SOURCES.indexOf(config.prefill) < 0) return "\"prefill\" must be one of: " + PREFILL_SOURCES.join(", ")
+  if (typeof config.pasteBack !== "boolean") return "\"pasteBack\" must be true or false"
   if (typeof config.closeOnCopy !== "boolean") return "\"closeOnCopy\" must be true or false"
   if (!isTimeout(config.timeoutSeconds))
     return "\"timeoutSeconds\" must be a whole number from 1 to " + MAX_TIMEOUT_SECONDS

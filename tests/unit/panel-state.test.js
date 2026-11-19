@@ -98,13 +98,32 @@ test("a failed run shows its error", () => {
   assert.deepEqual(failed().error, { key: "error.failed", args: ["Codex", "boom"] })
 })
 
-test("submitting a finished result copies it and closes", () => {
-  assert.deepEqual(PanelState.submit(done("Done.")).effect, { type: "copy", text: "Done.", close: true })
+test("accepting a finished result with paste-back closes and pastes it over the source", () => {
+  assert.deepEqual(PanelState.submit(done("Done."), true).effect, { type: "copy", text: "Done.", close: true, paste: true })
 })
 
-test("copy uses the closeOnCopy setting", () => {
-  assert.deepEqual(PanelState.copy(done("Done."), false).effect, { type: "copy", text: "Done.", close: false })
-  assert.deepEqual(PanelState.copy(done("Done."), true).effect, { type: "copy", text: "Done.", close: true })
+test("accepting a finished result without paste-back copies it and closes", () => {
+  assert.deepEqual(PanelState.submit(done("Done."), false).effect, { type: "copy", text: "Done.", close: true, paste: false })
+})
+
+test("copy only copies, using the closeOnCopy setting", () => {
+  assert.deepEqual(PanelState.copy(done("Done."), false).effect, { type: "copy", text: "Done.", close: false, paste: false })
+  assert.deepEqual(PanelState.copy(done("Done."), true).effect, { type: "copy", text: "Done.", close: true, paste: false })
+})
+
+test("auto prefill prefers the selection", () => {
+  assert.equal(PanelState.prefillText("auto", "selected", "copied"), "selected")
+})
+
+test("auto prefill falls back to the clipboard when nothing is selected", () => {
+  assert.equal(PanelState.prefillText("auto", " \n", "copied"), "copied")
+  assert.equal(PanelState.prefillText("auto", "", ""), "")
+})
+
+test("prefill can be pinned to one source or turned off", () => {
+  assert.equal(PanelState.prefillText("selection", "", "copied"), "")
+  assert.equal(PanelState.prefillText("clipboard", "selected", "copied"), "copied")
+  assert.equal(PanelState.prefillText("none", "selected", "copied"), "")
 })
 
 test("there is nothing to copy before a result", () => {

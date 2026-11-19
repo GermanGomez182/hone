@@ -21,7 +21,32 @@ test("defaults use claude haiku, auto language and the four standard actions", (
   assert.equal(config.provider, "claude")
   assert.equal(config.providers.claude.model, "haiku")
   assert.equal(config.language, "auto")
-  assert.deepEqual(config.actions.map((action) => action.id), ["grammar", "formal", "slack", "email"])
+  assert.deepEqual(config.actions.map((action) => action.id), ["chat", "grammar", "formal", "email"])
+})
+
+test("chat is the first action because it is the most used", () => {
+  assert.equal(Config.defaultConfig().actions[0].label, "Chat")
+})
+
+test("by default the panel starts from the selection and pastes the result back", () => {
+  const config = Config.defaultConfig()
+  assert.equal(config.prefill, "auto")
+  assert.equal(config.pasteBack, true)
+})
+
+test("prefill accepts auto, selection, clipboard or none", () => {
+  for (const prefill of ["auto", "selection", "clipboard", "none"])
+    assert.equal(parsed({ prefill }).config.prefill, prefill)
+  assert.match(errorOf({ prefill: "primary" }), /prefill/)
+})
+
+test("pasteBack must be a boolean", () => {
+  assert.equal(parsed({ pasteBack: false }).config.pasteBack, false)
+  assert.match(errorOf({ pasteBack: "no" }), /pasteBack/)
+})
+
+test("the old prefillClipboard setting is reported as unknown", () => {
+  assert.match(errorOf({ prefillClipboard: true }), /prefillClipboard/)
 })
 
 test("defaultConfig returns an independent copy each time", () => {
@@ -78,7 +103,7 @@ test("an unknown provider is rejected", () => {
 })
 
 test("wrong types are rejected with the field name", () => {
-  assert.match(errorOf({ prefillClipboard: "yes" }), /prefillClipboard/)
+  assert.match(errorOf({ closeOnCopy: "yes" }), /closeOnCopy/)
   assert.match(errorOf({ providers: { codex: { extraArgs: "-c x" } } }), /providers\.codex\.extraArgs/)
   assert.match(errorOf({ systemPrompt: "" }), /systemPrompt/)
 })
