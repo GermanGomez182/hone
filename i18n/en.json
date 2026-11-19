@@ -2,10 +2,7 @@
   "title": "Hone",
   "input.placeholder": "Paste or type the text to hone",
   "instruction.placeholder": "Extra instruction (optional), e.g. keep it under 50 words",
-  "section.original": "Original",
-  "section.result": "Result",
   "language.auto": "Auto language",
-  "result.placeholder": "Ctrl+Enter to run",
   "result.running": "Writing with %1...",
   "button.copy": "Copy",
   "button.retry": "Retry",
@@ -13,9 +10,8 @@
   "button.cancel": "Cancel",
   "notice.copied": "Copied to the clipboard",
   "hint.idle": "Ctrl+Enter run   Alt+1-%1 action   Ctrl+L language   Ctrl+P provider   Esc close",
-  "hint.running": "Writing...",
-  "hint.done": "Ctrl+Enter copy and close   Esc close",
-  "hint.doneReplace": "Ctrl+Enter replace the selection   Esc close",
+  "hint.done": "Ctrl+Enter copy and close",
+  "hint.doneReplace": "Ctrl+Enter replace",
   "error.config": "Fix %1: %2",
   "error.emptyInput": "Nothing to hone: the text is empty.",
   "error.emptyResponse": "The agent returned nothing. Try again.",
@@ -24,5 +20,6 @@
   "error.offline": "Could not reach %1. Check your connection.",
   "error.failed": "%1 failed: %2",
   "error.timedOut": "No answer after %1 s. Try again or raise timeoutSeconds.",
-  "error.copyFailed": "Could not copy to the clipboard. Is wl-clipboard installed?"
+  "error.copyFailed": "Could not copy to the clipboard. Is wl-clipboard installed?",
+  "hint.failed": "Ctrl+Enter run again   Esc close"
 }

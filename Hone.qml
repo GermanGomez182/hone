@@ -9,6 +9,7 @@ import qs.Ui
 import "Config.js" as Config
 import "PanelState.js" as PanelState
 import "Prompt.js" as Prompt
+import "Paste.js" as Paste
 import "Providers.js" as Providers
 
 // Hone: paste text, pick an action, and let Claude Code or Codex rewrite it.
@@ -32,6 +33,8 @@ Item {
   property var flow: PanelState.initial(Config.defaultConfig().provider, Config.defaultConfig().language)
   property var notice: null
   property int prefillPending: 0
+  // The window the text came from, { address, terminal }, recorded on open.
+  property var source: null
 
   readonly property var languages: [Config.AUTO_LANGUAGE].concat(root.config.languages)
   readonly property bool running: root.flow.status === "running"
@@ -47,10 +50,14 @@ Item {
   readonly property string fontFamily: Style.font.menuFamily
   readonly property int contentMargin: Style.spacing.panelPadding
   readonly property int gap: Style.spacing.controlGap
-  readonly property int cardWidth: Math.min(Style.space(760), panel.width - Style.gapsOut * 2)
+  readonly property int cardWidth: Math.min(Style.space(680), panel.width - Style.gapsOut * 2)
   // Long enough for Hyprland to hand focus back to the window the text came from.
   readonly property int focusReturnMs: 150
-  readonly property int cardHeight: Math.min(Style.space(600), panel.height - Style.gapsOut * 2)
+  // Gap between pressing and releasing the paste chord, as Omarchy uses.
+  readonly property int keyReleaseMs: 50
+  // The result area only exists once there is something to show in it.
+  readonly property bool showsResult: root.running || root.hasResult || root.flow.status === "failed" || root.configError !== ""
+  property bool pastePending: false
 
   Commons.Translations { id: strings; directory: Qt.resolvedUrl("i18n") }
 
@@ -58,6 +65,8 @@ Item {
     root.opened = true
     root.notice = null
     root.apply(PanelState.opened(root.flow, ""))
+    root.source = null
+    sourceReader.running = true
     root.readPrefill()
     Qt.callLater(function() { input.focusText() })
   }
@@ -226,33 +235,79 @@ Item {
       }
       if (copier.closeAfter) root.dismiss()
       else root.notice = { error: false, text: strings.t("notice.copied") }
-      if (copier.pasteAfter) pasteDelay.start()
+      if (copier.pasteAfter) root.pasteWhenHidden()
     }
   }
 
-  // Paste back the way Omarchy's emoji picker inserts: once the panel is gone
-  // and Hyprland has returned focus to the previous window, Shift+Insert
-  // pastes over its selection in browsers, editors and terminals alike. The
-  // result also stays on the clipboard in case the selection was lost.
+  // Paste the result over the selection in the window the text came from,
+  // the way Omarchy's universal paste does: press, then release, the paste
+  // chord in that window once the panel is gone. The result also stays on
+  // the clipboard in case the app lost its selection.
+  // The overlay holds the keyboard exclusively until it is unmapped, so a
+  // paste sent while it is still closing never reaches the source window.
+  function pasteWhenHidden() {
+    if (panel.visible) root.pastePending = true
+    else root.pasteBack()
+  }
+
+  Connections {
+    target: panel
+    function onVisibleChanged() {
+      if (panel.visible || !root.pastePending) return
+      root.pastePending = false
+      root.pasteBack()
+    }
+  }
+
+  function pasteBack() {
+    if (!root.source) {
+      console.warn("hone: no source window was recorded; the result is only on the clipboard")
+      return
+    }
+    pasteDelay.start()
+  }
+
+  Process {
+    id: sourceReader
+    command: ["hyprctl", "activewindow", "-j"]
+    stdout: StdioCollector { onStreamFinished: root.source = Paste.sourceWindow(text) }
+  }
+
   Timer {
     id: pasteDelay
     interval: root.focusReturnMs
     onTriggered: {
-      paster.started = false
-      paster.running = true
+      keyPress.command = ["hyprctl", "dispatch", Paste.keyState(root.source, "down")]
+      keyPress.running = true
     }
   }
 
   Process {
-    id: paster
-    property bool started: false
-    command: ["wtype", "-M", "shift", "-k", "Insert", "-m", "shift"]
-    onStarted: paster.started = true
+    id: keyPress
     onExited: function(exitCode) {
-      if (exitCode !== 0) console.warn("hone: paste-back failed: wtype exited with " + exitCode)
-      else console.info("hone: pasted the result back")
+      if (exitCode !== 0) {
+        console.warn("hone: paste-back failed: hyprctl exited with " + exitCode)
+        return
+      }
+      keyReleaseDelay.start()
     }
-    onRunningChanged: if (!running && !paster.started) console.warn("hone: paste-back failed: wtype is not installed")
+  }
+
+  Timer {
+    id: keyReleaseDelay
+    interval: root.keyReleaseMs
+    onTriggered: {
+      keyRelease.command = ["hyprctl", "dispatch", Paste.keyState(root.source, "up")]
+      keyRelease.running = true
+    }
+  }
+
+  Process {
+    id: keyRelease
+    onExited: function(exitCode) {
+      if (exitCode !== 0) console.warn("hone: paste-back release failed: hyprctl exited with " + exitCode)
+      else console.info("hone: pasted the result back into " + (root.source.terminal ? "a terminal" : "an app"))
+    }
   }
 
   HoneBackend {
@@ -279,7 +334,8 @@ Item {
     BorderSurface {
       id: card
       width: root.cardWidth
-      height: root.cardHeight
+      height: Math.min(layout.implicitHeight + card.contentTopInset + card.contentBottomInset,
+        panel.height - Style.gapsOut * 2)
       radius: root.cornerRadius
       anchors.centerIn: parent
       color: root.background
@@ -293,16 +349,10 @@ Item {
 
       Column {
         id: layout
-        anchors.fill: parent
-        anchors.topMargin: card.contentTopInset
-        anchors.rightMargin: card.contentRightInset
-        anchors.bottomMargin: card.contentBottomInset
-        anchors.leftMargin: card.contentLeftInset
+        x: card.contentLeftInset
+        y: card.contentTopInset
+        width: card.width - card.contentLeftInset - card.contentRightInset
         spacing: root.gap
-
-        readonly property int editorHeight: Math.max(Style.space(80),
-          (height - header.height - actions.height - instruction.height - footer.height
-            - originalLabel.height - resultLabel.height - spacing * 8) / 2)
 
         Item {
           id: header
@@ -374,12 +424,10 @@ Item {
           onTextEdited: if (text !== root.flow.instruction) root.apply(PanelState.editInstruction(root.flow, text))
         }
 
-        SectionText { id: originalLabel; text: strings.t("section.original"); fontName: root.fontFamily }
-
         Editor {
           id: input
           width: parent.width
-          height: layout.editorHeight
+          height: root.showsResult ? Style.space(120) : Style.space(180)
           text: root.flow.input
           placeholder: strings.t("input.placeholder")
           readOnly: root.running
@@ -391,39 +439,10 @@ Item {
           }
         }
 
-        // The result title shares its line with the keyboard hint, which has
-        // the whole width here instead of competing with the buttons below.
-        Item {
-          id: resultLabel
-          width: parent.width
-          height: Math.max(resultTitle.implicitHeight, hint.implicitHeight)
-
-          SectionText {
-            id: resultTitle
-            anchors.left: parent.left
-            anchors.verticalCenter: parent.verticalCenter
-            text: strings.t("section.result")
-            fontName: root.fontFamily
-          }
-
-          SectionText {
-            id: hint
-            anchors.left: resultTitle.right
-            anchors.leftMargin: root.gap
-            anchors.right: parent.right
-            anchors.verticalCenter: parent.verticalCenter
-            horizontalAlignment: Text.AlignRight
-            elide: Text.ElideLeft
-            fontName: root.fontFamily
-            text: root.running ? strings.t("hint.running")
-              : root.hasResult ? strings.t(root.config.pasteBack ? "hint.doneReplace" : "hint.done")
-              : strings.t("hint.idle").arg(root.config.actions.length)
-          }
-        }
-
         Item {
           width: parent.width
-          height: layout.editorHeight
+          height: Style.space(150)
+          visible: root.showsResult
 
           Editor {
             anchors.fill: parent
@@ -441,8 +460,8 @@ Item {
             anchors.fill: parent
             visible: !root.hasResult && !root.running
             text: root.configError ? strings.t("error.config").arg(root.configPath).arg(root.configError)
-              : root.flow.error ? root.errorText(root.flow.error) : strings.t("result.placeholder")
-            color: (root.configError || root.flow.error) ? Commons.Color.urgent : Commons.Color.muted
+              : root.flow.error ? root.errorText(root.flow.error) : ""
+            color: Commons.Color.urgent
             wrapMode: Text.Wrap
             font.family: root.fontFamily
             font.pixelSize: Style.font.body
@@ -452,19 +471,23 @@ Item {
         Item {
           id: footer
           width: parent.width
-          // Sized by a button even when none is shown, so the editors above
-          // keep their height as buttons come and go.
-          height: Math.max(noticeText.implicitHeight, copyButton.implicitHeight)
+          // Sized by a button even when none is shown, so the panel keeps its
+          // height as buttons come and go.
+          height: Math.max(hint.implicitHeight, copyButton.implicitHeight)
 
+          // One line of help that only names keys the buttons do not show.
           Text {
-            id: noticeText
+            id: hint
             textFormat: Text.PlainText
             anchors.left: parent.left
             anchors.right: buttons.left
             anchors.rightMargin: root.gap
             anchors.verticalCenter: parent.verticalCenter
-            visible: root.notice !== null
-            text: root.notice ? root.notice.text : ""
+            text: root.notice ? root.notice.text
+              : root.configError || root.running ? ""
+              : root.hasResult ? strings.t(root.config.pasteBack ? "hint.doneReplace" : "hint.done")
+              : root.flow.status === "failed" ? strings.t("hint.failed")
+              : strings.t("hint.idle").arg(root.config.actions.length)
             color: root.notice && root.notice.error ? Commons.Color.urgent : Commons.Color.muted
             elide: Text.ElideRight
             font.family: root.fontFamily
@@ -524,14 +547,6 @@ Item {
         reader.read()
       }
     }
-  }
-
-  component SectionText: Text {
-    property string fontName: ""
-    textFormat: Text.PlainText
-    color: Commons.Color.muted
-    font.family: fontName
-    font.pixelSize: Style.font.caption
   }
 
   // A scrollable plain-text area styled like the kit's TextField. Inline

@@ -82,11 +82,11 @@ Example action:
 ## How replacing works
 
 Hone reads your selection through Wayland's primary selection, so there is no
-need to copy first. On accept it puts the result on the clipboard, closes, and
-once Hyprland has returned focus to your app it sends `Shift+Insert`, the same
-way Omarchy's emoji picker inserts emoji. If the app dropped its selection, the
-result is inserted at the cursor instead, and it is always left on the
-clipboard so you can paste it by hand.
+need to copy first, and remembers which window you were in. On accept it puts
+the result on the clipboard, closes, and once the panel is gone sends that window
+the same paste Omarchy's `Super+V` does: `Ctrl+V` in apps, `Ctrl+Shift+V` in
+terminals. If the app dropped its selection, the result lands at the cursor
+instead, and it always stays on the clipboard so you can paste it by hand.
 
 ## Privacy
 
