@@ -1,0 +1,6 @@
+#!/bin/sh
+# Echoes stdin back as a Claude Code stream: one delta, then the result.
+input=$(cat)
+printf '%s\n' '{"type":"system","subtype":"init"}'
+printf '{"type":"stream_event","event":{"type":"content_block_delta","delta":{"type":"text_delta","text":"got:%s"}}}\n' "$input"
+printf '{"type":"result","subtype":"success","is_error":false,"result":"got:%s"}\n' "$input"

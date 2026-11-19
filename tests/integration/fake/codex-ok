@@ -1,0 +1,7 @@
+#!/bin/sh
+# Answers like `codex exec --json`, including a config warning item.
+cat >/dev/null
+printf '%s\n' '{"type":"thread.started"}'
+printf '%s\n' '{"type":"item.completed","item":{"id":"item_0","type":"error","message":"ignoring a setting"}}'
+printf '%s\n' '{"type":"item.completed","item":{"id":"item_1","type":"agent_message","text":"codex says hi"}}'
+printf '%s\n' '{"type":"turn.completed"}'

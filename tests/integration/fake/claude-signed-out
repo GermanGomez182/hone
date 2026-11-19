@@ -1,0 +1,4 @@
+#!/bin/sh
+cat >/dev/null
+echo "Invalid API key · Please run /login" >&2
+exit 1
