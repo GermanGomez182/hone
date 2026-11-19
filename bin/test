@@ -1,0 +1,15 @@
+#!/bin/bash
+# Runs the plugin's checks: unit tests for the pure logic, then Omarchy's own
+# manifest validator. Pass --integration to also drive the backend through a
+# real Quickshell process (needs a Wayland session).
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+node --test tests/unit/
+omarchy plugin validate .
+echo "manifest ok"
+
+if [[ ${1:-} == --integration ]]; then
+  tests/integration/run
+fi

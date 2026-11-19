@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "hone",
+  "name": "Hone",
+  "version": "0.1.0",
+  "author": "German Gomez",
+  "license": "MIT",
+  "description": "Grammar-check, formalize, or rewrite any text with Claude Code or Codex before you send it.",
+  "kinds": [
+    "overlay"
+  ],
+  "keepLoaded": true,
+  "entryPoints": {
+    "overlay": "Hone.qml"
+  }
+}
