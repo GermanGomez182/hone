@@ -237,7 +237,10 @@ Item {
   Timer {
     id: pasteDelay
     interval: root.focusReturnMs
-    onTriggered: paster.running = true
+    onTriggered: {
+      paster.started = false
+      paster.running = true
+    }
   }
 
   Process {
@@ -246,7 +249,6 @@ Item {
     command: ["wtype", "-M", "shift", "-k", "Insert", "-m", "shift"]
     onStarted: paster.started = true
     onExited: function(exitCode) {
-      paster.started = false
       if (exitCode !== 0) console.warn("hone: paste-back failed: wtype exited with " + exitCode)
       else console.info("hone: pasted the result back")
     }
