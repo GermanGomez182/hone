@@ -1,0 +1,51 @@
+name: Bug report
+description: Something in Hone did not work as expected
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you expected, and what you saw instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps
+      description: The keys you pressed, in order.
+      placeholder: |
+        1. Selected text in Slack
+        2. Super+Ctrl+G
+        3. Ctrl+Enter twice
+    validations:
+      required: true
+  - type: input
+    id: app
+    attributes:
+      label: App you were writing in
+      placeholder: Slack desktop, Brave, Alacritty...
+  - type: dropdown
+    id: provider
+    attributes:
+      label: Provider
+      options: [Claude Code, Codex]
+  - type: input
+    id: omarchy
+    attributes:
+      label: Omarchy version
+      description: Output of `omarchy version`
+  - type: textarea
+    id: log
+    attributes:
+      label: Hone log
+      description: |
+        Output of `qs log -p /usr/share/omarchy/shell | grep -i hone | tail -40`.
+        It records states and errors only, never your text.
+      render: text
+  - type: textarea
+    id: config
+    attributes:
+      label: Config
+      description: Contents of `~/.config/hone/config.json`, if you changed it.
+      render: json

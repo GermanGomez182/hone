@@ -95,6 +95,17 @@ pasted it into `claude` or `codex` yourself. Hone passes it on stdin (never as a
 command-line argument), runs Claude Code with no tools, MCP servers, settings or
 saved session, runs Codex read-only and ephemeral, and never logs the text.
 
+## Report a problem
+
+Open an [issue](https://github.com/GermanGomez182/hone/issues/new/choose) with the
+keys you pressed and the output of:
+
+```bash
+qs log -p /usr/share/omarchy/shell | grep -i hone | tail -40
+```
+
+The log records states and errors only, never your text.
+
 ## Develop
 
 ```bash
