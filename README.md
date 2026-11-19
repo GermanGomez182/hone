@@ -1,0 +1,94 @@
+# Hone
+
+An [Omarchy](https://omarchy.org) overlay that polishes text before you send it.
+Press a hotkey, the text you just copied is already there, pick an action, and
+Claude Code or Codex rewrites it. Copy the result and paste it into Slack, email,
+a PR, anywhere.
+
+- **Actions**: Grammar, Formalize, Slack, Email out of the box, and your own in the config.
+- **Extra instruction** for one-off tweaks ("keep it under 50 words").
+- **Language**: keep the input's language, or force English, Spanish, or any language you add.
+- **Claude Code or Codex**, using the CLI you are already signed in to. No API keys.
+- Streams the answer as it is written; cancel, retry, or feed the result back in.
+- Native to Omarchy: follows your theme and grabs the keyboard like the emoji picker.
+
+## Install
+
+You need [Claude Code](https://claude.com/claude-code) or [Codex](https://github.com/openai/codex)
+installed and signed in, and `wl-clipboard` (part of Omarchy).
+
+```bash
+omarchy plugin add https://github.com/GermanGomez182/hone --enable
+```
+
+Then bind a key in `~/.config/hypr/bindings.lua`:
+
+```lua
+o.bind("SUPER + CTRL + G", "Hone", { panel = "hone" })
+```
+
+Pressing the key again closes the panel.
+
+## Use
+
+| Key | Does |
+| --- | --- |
+| `Ctrl+Enter` | Run the action; once there is a result, copy it and close |
+| `Alt+1` ... `Alt+9` | Pick an action |
+| `Ctrl+L` | Cycle the output language |
+| `Ctrl+P` | Switch between Claude Code and Codex (remembered) |
+| `Ctrl+Shift+C` | Copy the result |
+| `Ctrl+R` | Retry |
+| `Ctrl+U` | Use the result as the new input |
+| `Esc` | Cancel a running request, otherwise close |
+
+## Configure
+
+Hone writes its defaults to `~/.config/hone/config.json` the first time it loads.
+Edit it and the panel picks the change up on save. Unknown keys and wrong types
+are reported in the panel rather than ignored.
+
+| Setting | Default | Meaning |
+| --- | --- | --- |
+| `provider` | `"claude"` | `"claude"` or `"codex"`; the last one picked with `Ctrl+P` wins |
+| `language` | `"auto"` | `"auto"` keeps the input's language, or one of `languages` |
+| `languages` | `["English", "Spanish"]` | What `Ctrl+L` cycles through after auto |
+| `prefillClipboard` | `true` | Start with the clipboard text |
+| `closeOnCopy` | `false` | Close after `Ctrl+Shift+C` (`Ctrl+Enter` always closes) |
+| `timeoutSeconds` | `60` | Give up after this long (1 to 600) |
+| `providers.claude` | `claude`, model `haiku` | `binary`, `model` (empty = the CLI's default), `extraArgs` |
+| `providers.codex` | `codex`, low reasoning effort | Same fields |
+| `systemPrompt` | see file | Shared instructions; `{language}` is replaced |
+| `actions` | four actions | Up to nine `{ "id", "label", "prompt" }` entries, bound to `Alt+1..9` |
+
+Example action:
+
+```json
+{ "id": "pr", "label": "PR comment", "prompt": "Rewrite as a short, kind code review comment." }
+```
+
+## Privacy
+
+Your text goes to the provider you pick, through its CLI, exactly as if you had
+pasted it into `claude` or `codex` yourself. Hone passes it on stdin (never as a
+command-line argument), runs Claude Code with no tools, MCP servers, settings or
+saved session, runs Codex read-only and ephemeral, and never logs the text.
+
+## Develop
+
+```bash
+bin/test                # unit tests (node) + omarchy plugin validate
+bin/test --integration  # also drives the backend in a real Quickshell against fake CLIs
+```
+
+The logic lives in plain JavaScript files tested with `node --test`: `Config.js`
+(settings), `Prompt.js`, `Providers.js` (CLI commands and stream parsing) and
+`PanelState.js` (the panel's state machine). `HoneBackend.qml` runs the CLI and
+`Hone.qml` draws the panel.
+
+Strings live in `i18n/<language>.json`; English is complete and missing strings
+fall back to it. Translations are welcome.
+
+## License
+
+MIT
