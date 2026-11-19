@@ -24,6 +24,10 @@ test("defaults use claude haiku, auto language and the four standard actions", (
   assert.deepEqual(config.actions.map((action) => action.id), ["chat", "grammar", "formal", "email"])
 })
 
+test("the default system prompt leaves the language to the user message", () => {
+  assert.doesNotMatch(Config.defaultConfig().systemPrompt, /\{language\}|Write the result in/)
+})
+
 test("chat is the first action because it is the most used", () => {
   assert.equal(Config.defaultConfig().actions[0].label, "Chat")
 })

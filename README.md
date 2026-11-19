@@ -70,7 +70,7 @@ rather than ignored.
 | `timeoutSeconds` | `60` | Give up after this long (1 to 600) |
 | `providers.claude` | `claude`, model `haiku` | `binary`, `model` (empty = the CLI's default), `extraArgs` |
 | `providers.codex` | `codex`, low reasoning effort | Same fields |
-| `systemPrompt` | see file | Shared instructions; `{language}` is replaced |
+| `systemPrompt` | see `Config.js` | Shared instructions sent with every action |
 | `actions` | four actions | Up to nine `{ "id", "label", "prompt" }` entries, bound to `Alt+1..9` |
 
 Example action:
