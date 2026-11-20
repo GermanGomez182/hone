@@ -105,8 +105,8 @@ Item {
   function startRun(runId, job) {
     var action = root.config.actions[job.actionIndex]
     var prompt = {
-      system: Prompt.system(root.config.systemPrompt, action.prompt, job.instruction),
-      user: Prompt.userMessage(job.input, job.language)
+      system: Prompt.system(root.config.systemPrompt, action.prompt),
+      user: Prompt.userMessage(job.input, job.language, job.instruction)
     }
     backend.run(runId, job.provider, root.config.providers[job.provider], prompt, root.config.timeoutSeconds)
   }

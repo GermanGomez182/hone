@@ -118,10 +118,11 @@ instead, and it always stays on the clipboard so you can paste it by hand.
 
 ## Privacy
 
-Your text goes to the provider you pick, through its CLI, exactly as if you had
-pasted it into `claude` or `codex` yourself. Hone passes it on stdin (never as a
-command-line argument), runs Claude Code with no tools, MCP servers, settings or
-saved session, runs Codex read-only and ephemeral, and never logs the text.
+Your text and extra instruction go to the provider you pick, through its CLI,
+exactly as if you had pasted them into `claude` or `codex` yourself. Hone passes
+both on stdin (never as a command-line argument), runs Claude Code with no
+tools, MCP servers, settings or saved session, runs Codex read-only and
+ephemeral, and never logs the text.
 
 ## Report a problem
 

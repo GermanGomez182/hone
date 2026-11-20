@@ -4,17 +4,17 @@ const Prompt = require("../../Prompt.js")
 
 const TEMPLATE = "Rewrite."
 
-test("the action prompt follows the template", () => {
-  assert.equal(Prompt.system(TEMPLATE, "Fix grammar.", ""), "Rewrite.\n\nFix grammar.")
+test("the system prompt carries no per-run instruction, so it never reaches the command line", () => {
+  assert.equal(Prompt.system(TEMPLATE, "Fix grammar."), "Rewrite.\n\nFix grammar.")
 })
 
-test("a free instruction is appended after the action", () => {
-  const system = Prompt.system(TEMPLATE, "Fix grammar.", "  keep it under 50 words ")
-  assert.match(system, /Fix grammar\.\n\nAdditional instruction from the user: keep it under 50 words$/)
+test("a free instruction travels in the user message, after the text", () => {
+  const message = Prompt.userMessage("hola", "auto", "  keep it under 50 words ")
+  assert.match(message, /<\/text>\n\nAdditional instruction from the user: keep it under 50 words\n\nWrite the result/)
 })
 
 test("a blank instruction adds nothing", () => {
-  assert.doesNotMatch(Prompt.system(TEMPLATE, "Fix.", " \n"), /Additional instruction/)
+  assert.doesNotMatch(Prompt.userMessage("hola", "auto", " \n"), /Additional instruction/)
 })
 
 test("the user text is fenced in text tags", () => {
