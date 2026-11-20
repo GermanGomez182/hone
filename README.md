@@ -5,6 +5,8 @@ Select the text in any app (Slack, email, a PR, a terminal), press the hotkey,
 press `Ctrl+Enter` twice, and Claude Code or Codex's rewrite replaces your
 selection in place.
 
+![Hone with a rough message and its formal rewrite](screenshots/2-result.png)
+
 - **Replace in place**: the result is pasted over your selection, and stays on the clipboard as a fallback.
 - **Actions**: Chat, Grammar, Formalize, Email out of the box, and your own in the config.
 - **Extra instruction** for one-off tweaks ("keep it under 50 words").
@@ -32,6 +34,8 @@ Pressing the key again closes the panel. After `omarchy plugin update hone`, run
 `omarchy restart shell` so the shell picks up the new code.
 
 ## Use
+
+![Hone opened with the selected text](screenshots/1-selected.png)
 
 | Key | Does |
 | --- | --- |
@@ -111,6 +115,7 @@ The log records states and errors only, never your text.
 ```bash
 bin/test                # unit tests (node) + omarchy plugin validate
 bin/test --integration  # also drives the backend in a real Quickshell against fake CLIs
+bin/screenshots         # regenerates the README images with invented text (hands off for ~20 s)
 ```
 
 The logic lives in plain JavaScript files tested with `node --test`: `Config.js`

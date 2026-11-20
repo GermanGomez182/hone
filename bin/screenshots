@@ -1,0 +1,80 @@
+#!/bin/bash
+# Regenerates the README screenshots with invented text, using the Hone
+# installed in the running Omarchy shell and the real provider. It takes over
+# the screen and keyboard for about 20 seconds: do not touch the computer
+# while it runs.
+set -euo pipefail
+
+root="$(cd "$(dirname "$0")/.." && pwd)"
+out="$root/screenshots"
+work=$(mktemp -d)
+trap 'pkill -f "qs -p $work/demo" 2>/dev/null || true; rm -rf "$work"' EXIT
+
+demo_text="hey team, quick heads up the deploy is moved to thursday cause QA found a bug in the checkout flow. can everyone double check there tickets before then? thx"
+
+pause() { timeout "$1" tail -f /dev/null || true; }
+panel_open() { hyprctl layers -j | jq -e '.. | objects | select(.namespace? == "hone")' >/dev/null; }
+press() {
+  hyprctl dispatch "hl.dsp.send_key_state({ mods = \"$1\", key = \"$2\", state = \"down\" })" >/dev/null
+  pause 0.05
+  hyprctl dispatch "hl.dsp.send_key_state({ mods = \"$1\", key = \"$2\", state = \"up\" })" >/dev/null
+  pause 0.15
+}
+last_state() { qs log -p /usr/share/omarchy/shell 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g' | grep -E "hone: " | tail -n 1; }
+wait_for_result() {
+  for _ in $(seq 1 60); do
+    last_state | grep -qE "running -> done" && return 0
+    last_state | grep -qE "running -> failed" && { echo "the run failed; see qs log" >&2; exit 1; }
+    pause 0.5
+  done
+  echo "no result after 30 s" >&2
+  exit 1
+}
+
+# Grab the focused monitor, keep the middle, and trim the uniform scrim
+# around the card so only the panel remains.
+shoot() {
+  local monitor geometry
+  monitor=$(hyprctl monitors -j | jq -r '.[] | select(.focused) | .name')
+  geometry=$(hyprctl monitors -j | jq -r '.[] | select(.focused) | "\(.width)x\(.height)"')
+  grim -o "$monitor" "$work/full.png"
+  magick "$work/full.png" -gravity center -crop 1100x900+0+0 +repage \
+    -fuzz 4% -trim +repage "$out/$1.png"
+  echo "saved screenshots/$1.png ($geometry monitor)"
+}
+
+panel_open && { echo "close Hone first" >&2; exit 1; }
+mkdir -p "$out" "$work/demo"
+cp "$root/tests/screenshots/shell.qml" "$work/demo/"
+
+HONE_DEMO_TEXT="$demo_text" qs -p "$work/demo" >"$work/demo.log" 2>&1 &
+pause 2.5
+[[ $(hyprctl activewindow -j | jq -r .title) == hone-demo ]] || { echo "the demo window did not get focus" >&2; exit 1; }
+
+# Fullscreen, so the only thing behind the panel is the demo window and no
+# part of the real desktop can end up in a screenshot.
+demo=$(hyprctl activewindow -j | jq -r .address)
+hyprctl dispatch "hl.dsp.window.fullscreen({ mode = \"fullscreen\", action = \"set\", window = \"address:$demo\" })" >/dev/null
+pause 0.8
+read -r window_size monitor_size < <(
+  hyprctl clients -j | jq -r --arg a "$demo" '.[] | select(.address == $a) | "\(.size[0])x\(.size[1])"' | tr '\n' ' '
+  hyprctl monitors -j | jq -r '.[] | select(.focused) | "\(.width)x\(.height)"'
+)
+[[ $window_size == "$monitor_size" ]] || { echo "the demo window does not cover the monitor ($window_size vs $monitor_size)" >&2; exit 1; }
+
+press CTRL A
+[[ $(wl-paste --primary --no-newline) == "$demo_text" ]] || { echo "the demo text is not the selection" >&2; exit 1; }
+
+omarchy-shell shell toggle hone '{}' >/dev/null
+pause 1.5
+panel_open || { echo "Hone did not open" >&2; exit 1; }
+shoot 1-selected
+
+press CTRL Return
+wait_for_result
+pause 0.4
+shoot 2-result
+
+press CTRL Return
+pause 2
+grep -q "DEMO-TEXT" "$work/demo.log" && echo "replaced in the demo window: $(grep DEMO-TEXT "$work/demo.log" | tail -1 | sed 's/.*DEMO-TEXT //')"
