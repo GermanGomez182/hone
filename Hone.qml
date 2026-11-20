@@ -51,13 +51,8 @@ Item {
   readonly property int contentMargin: Style.spacing.panelPadding
   readonly property int gap: Style.spacing.controlGap
   readonly property int cardWidth: Math.min(Style.space(680), panel.width - Style.gapsOut * 2)
-  // Long enough for Hyprland to hand focus back to the window the text came from.
-  readonly property int focusReturnMs: 150
-  // Gap between pressing and releasing the paste chord, as Omarchy uses.
-  readonly property int keyReleaseMs: 50
   // The result area only exists once there is something to show in it.
   readonly property bool showsResult: root.running || root.hasResult || root.flow.status === "failed" || root.configError !== ""
-  property bool pastePending: false
 
   Commons.Translations { id: strings; directory: Qt.resolvedUrl("i18n") }
 
@@ -65,6 +60,11 @@ Item {
     root.opened = true
     root.notice = null
     root.apply(PanelState.opened(root.flow, ""))
+    // A copy still finishing from the previous opening must neither close
+    // this one nor paste into the window recorded now.
+    copier.closeAfter = false
+    copier.pasteAfter = false
+    paster.cancel()
     root.source = null
     sourceReader.running = true
     root.readPrefill()
@@ -115,6 +115,7 @@ Item {
     copier.pendingText = text
     copier.closeAfter = closeAfter || pasteAfter
     copier.pasteAfter = pasteAfter
+    copier.pasteTarget = pasteAfter ? root.source : null
     copier.running = true
   }
 
@@ -220,6 +221,8 @@ Item {
     property string pendingText: ""
     property bool closeAfter: false
     property bool pasteAfter: false
+    // The window to paste into, taken when the copy starts.
+    property var pasteTarget: null
     command: ["wl-copy"]
     stdinEnabled: true
     onStarted: {
@@ -235,79 +238,19 @@ Item {
       }
       if (copier.closeAfter) root.dismiss()
       else root.notice = { error: false, text: strings.t("notice.copied") }
-      if (copier.pasteAfter) root.pasteWhenHidden()
+      if (copier.pasteAfter) paster.schedule(copier.pasteTarget)
     }
   }
 
-  // Paste the result over the selection in the window the text came from,
-  // the way Omarchy's universal paste does: press, then release, the paste
-  // chord in that window once the panel is gone. The result also stays on
-  // the clipboard in case the app lost its selection.
-  // The overlay holds the keyboard exclusively until it is unmapped, so a
-  // paste sent while it is still closing never reaches the source window.
-  function pasteWhenHidden() {
-    if (panel.visible) root.pastePending = true
-    else root.pasteBack()
-  }
-
-  Connections {
-    target: panel
-    function onVisibleChanged() {
-      if (panel.visible || !root.pastePending) return
-      root.pastePending = false
-      root.pasteBack()
-    }
-  }
-
-  function pasteBack() {
-    if (!root.source) {
-      console.warn("hone: no source window was recorded; the result is only on the clipboard")
-      return
-    }
-    pasteDelay.start()
+  PasteBack {
+    id: paster
+    panelVisible: panel.visible
   }
 
   Process {
     id: sourceReader
     command: ["hyprctl", "activewindow", "-j"]
     stdout: StdioCollector { onStreamFinished: root.source = Paste.sourceWindow(text) }
-  }
-
-  Timer {
-    id: pasteDelay
-    interval: root.focusReturnMs
-    onTriggered: {
-      keyPress.command = ["hyprctl", "dispatch", Paste.keyState(root.source, "down")]
-      keyPress.running = true
-    }
-  }
-
-  Process {
-    id: keyPress
-    onExited: function(exitCode) {
-      if (exitCode !== 0) {
-        console.warn("hone: paste-back failed: hyprctl exited with " + exitCode)
-        return
-      }
-      keyReleaseDelay.start()
-    }
-  }
-
-  Timer {
-    id: keyReleaseDelay
-    interval: root.keyReleaseMs
-    onTriggered: {
-      keyRelease.command = ["hyprctl", "dispatch", Paste.keyState(root.source, "up")]
-      keyRelease.running = true
-    }
-  }
-
-  Process {
-    id: keyRelease
-    onExited: function(exitCode) {
-      if (exitCode !== 0) console.warn("hone: paste-back release failed: hyprctl exited with " + exitCode)
-      else console.info("hone: pasted the result back into " + (root.source.terminal ? "a terminal" : "an app"))
-    }
   }
 
   HoneBackend {

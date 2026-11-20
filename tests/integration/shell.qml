@@ -1,9 +1,10 @@
 import QtQuick
 import Quickshell
+import Quickshell.Io
 import "plugin"
 
-// Drives the real HoneBackend component against fake CLIs and prints one
-// PASS/FAIL line per case. Run through tests/integration/run.
+// Drives the real HoneBackend and PasteBack components against fake CLIs and
+// prints one PASS/FAIL line per case. Run through tests/integration/run.
 ShellRoot {
   id: harness
 
@@ -15,6 +16,19 @@ ShellRoot {
 
   function settings(binary) {
     return { binary: binary, model: "", extraArgs: [] }
+  }
+
+  readonly property var appWindow: ({ address: "0xa1", terminal: false })
+  readonly property var terminalWindow: ({ address: "0xb2", terminal: true })
+
+  function pastes() {
+    return pasteLog.text().split("\n").filter(function(line) { return line !== "" })
+  }
+
+  function dispatch(window, state) {
+    var mods = window.terminal ? "CTRL SHIFT" : "CTRL"
+    return 'dispatch hl.dsp.send_key_state({ mods = "' + mods + '", key = "V", state = "' + state
+      + '", window = "address:' + window.address + '" })'
   }
 
   function onlyFinished(runId) {
@@ -113,6 +127,51 @@ ShellRoot {
         check: function() {
           return expectEqual(events.length, 0) || (backend.busy ? "still running" : "")
         }
+      },
+      {
+        name: "a paste waits for the panel to hide, then presses and releases in the window it was scheduled for",
+        start: function() {
+          paster.panelVisible = true
+          paster.schedule(appWindow)
+          hideTimer.start()
+        },
+        wait: 1500,
+        check: function() {
+          return expectEqual(pastes(), [dispatch(appWindow, "down"), dispatch(appWindow, "up")])
+        }
+      },
+      {
+        name: "a paste scheduled while hidden goes out after the focus delay",
+        start: function() {
+          paster.panelVisible = false
+          paster.schedule(terminalWindow)
+        },
+        wait: 1000,
+        check: function() {
+          return expectEqual(pastes(), [dispatch(terminalWindow, "down"), dispatch(terminalWindow, "up")])
+        }
+      },
+      {
+        name: "reopening the panel before a pending paste is sent drops it",
+        start: function() {
+          paster.panelVisible = true
+          paster.schedule(appWindow)
+          paster.panelVisible = false
+          paster.cancel()
+          paster.panelVisible = true
+          paster.panelVisible = false
+        },
+        wait: 1000,
+        check: function() { return expectEqual(pastes(), []) }
+      },
+      {
+        name: "a paste with no recorded window sends nothing",
+        start: function() {
+          paster.panelVisible = false
+          paster.schedule(null)
+        },
+        wait: 1000,
+        check: function() { return expectEqual(pastes(), []) }
       }
     ]
     next()
@@ -126,6 +185,7 @@ ShellRoot {
       return
     }
     events = []
+    pasteLog.setText("")
     cases[current].start()
     caseTimer.interval = cases[current].wait
     caseTimer.start()
@@ -144,6 +204,26 @@ ShellRoot {
     id: cancelTimer
     interval: 200
     onTriggered: backend.cancel()
+  }
+
+  Timer {
+    id: hideTimer
+    interval: 400
+    onTriggered: paster.panelVisible = false
+  }
+
+  FileView {
+    id: pasteLog
+    path: Quickshell.env("HONE_PASTE_LOG")
+    blockLoading: true
+    blockWrites: true
+    watchChanges: true
+    onFileChanged: reload()
+  }
+
+  PasteBack {
+    id: paster
+    hyprctl: harness.fakes + "/hyprctl"
   }
 
   HoneBackend {

@@ -14,7 +14,7 @@ cp "$here/shell.qml" "$config/"
 mkdir "$config/plugin"
 cp "$root"/*.qml "$root"/*.js "$config/plugin/"
 
-output=$(HONE_FAKES="$here/fake" timeout 60 qs -p "$config" 2>&1 | sed 's/\x1b\[[0-9;]*m//g' || true)
+output=$(HONE_FAKES="$here/fake" HONE_PASTE_LOG="$config/paste.log" timeout 60 qs -p "$config" 2>&1 | sed 's/\x1b\[[0-9;]*m//g' || true)
 results=$(grep -o "HONE-TEST .*" <<<"$output" || true)
 
 echo "$results"
