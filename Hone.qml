@@ -22,7 +22,7 @@ Item {
   property var manifest: null
   property bool opened: false
 
-  readonly property string pluginId: (root.manifest && root.manifest.id) || "hone"
+  readonly property string pluginId: (root.manifest && root.manifest.id) || "io.github.germangomez182.hone"
   readonly property string configHome: Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")
   readonly property string stateHome: Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")
   readonly property string configPath: root.configHome + "/hone/config.json"

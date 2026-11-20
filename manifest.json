@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "id": "hone",
+  "id": "io.github.germangomez182.hone",
   "name": "Hone",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "author": "German Gomez",
   "license": "MIT",
   "description": "Grammar-check, formalize, or rewrite any text with Claude Code or Codex before you send it.",

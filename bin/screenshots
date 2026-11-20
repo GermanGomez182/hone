@@ -75,6 +75,9 @@ wait_for_result
 pause 0.4
 shoot 2-result
 
+# The marketplace card image.
+cp "$out/2-result.png" "$root/preview.png"
+
 press CTRL Return
 pause 2
 grep -q "DEMO-TEXT" "$work/demo.log" && echo "replaced in the demo window: $(grep DEMO-TEXT "$work/demo.log" | tail -1 | sed 's/.*DEMO-TEXT //')"

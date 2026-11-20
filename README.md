@@ -15,10 +15,16 @@ selection in place.
 - Streams the answer as it is written; cancel, retry, or feed the result back in.
 - Native to Omarchy: follows your theme and grabs the keyboard like the emoji picker.
 
-## Install
+## Requirements
 
-You need [Claude Code](https://claude.com/claude-code) or [Codex](https://github.com/openai/codex)
-installed and signed in, and `wl-clipboard` (part of Omarchy).
+- Omarchy with its Quickshell shell (Hyprland)
+- [Claude Code](https://claude.com/claude-code) (`claude`) or [Codex](https://github.com/openai/codex) (`codex`),
+  installed and signed in. Your text is sent to the provider you pick.
+- `wl-clipboard` (`wl-copy`, `wl-paste`), included in Omarchy
+
+No sudo, services, or downloads: Hone only runs the CLIs above, `wl-copy`/`wl-paste` and `hyprctl`.
+
+## Install
 
 ```bash
 omarchy plugin add https://github.com/GermanGomez182/hone --enable
@@ -27,11 +33,29 @@ omarchy plugin add https://github.com/GermanGomez182/hone --enable
 Then bind a key in `~/.config/hypr/bindings.lua`:
 
 ```lua
-o.bind("SUPER + CTRL + G", "Hone", { panel = "hone" })
+o.bind("SUPER + CTRL + G", "Hone", { panel = "io.github.germangomez182.hone" })
 ```
 
-Pressing the key again closes the panel. After `omarchy plugin update hone`, run
-`omarchy restart shell` so the shell picks up the new code.
+Pressing the key again closes the panel.
+
+## Update
+
+```bash
+omarchy plugin update io.github.germangomez182.hone
+omarchy restart shell
+```
+
+The shell only picks up new plugin code after a restart.
+
+## Remove
+
+```bash
+omarchy plugin remove io.github.germangomez182.hone
+```
+
+Then delete the `o.bind(...)` line from `~/.config/hypr/bindings.lua`. Hone's own
+files are `~/.config/hone/` (settings) and `~/.local/state/hone/` (remembered
+provider); delete them too if you do not plan to reinstall.
 
 ## Use
 
