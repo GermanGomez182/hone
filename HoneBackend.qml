@@ -31,14 +31,16 @@ Item {
       timeoutSeconds: timeoutSeconds
     }
     if (process.running) {
-      backend.queued = request
       backend.cancel()
+      backend.queued = request
       return
     }
     backend.start(request)
   }
 
+  // Cancels the active run and any run waiting behind it.
   function cancel() {
+    backend.queued = null
     timeout.stop()
     if (!backend.active || !process.running) return
     backend.active.cancelled = true

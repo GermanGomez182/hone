@@ -101,6 +101,18 @@ ShellRoot {
         check: function() {
           return expectEqual(onlyFinished(7), null) || expectEqual(onlyFinished(8), { text: "got:hello" })
         }
+      },
+      {
+        name: "cancelling while a run is queued drops the queued run too",
+        start: function() {
+          backend.run(9, "claude", settings(fakes + "/slow"), prompt, 30)
+          backend.run(10, "claude", settings(fakes + "/claude-ok"), prompt, 5)
+          backend.cancel()
+        },
+        wait: 3000,
+        check: function() {
+          return expectEqual(events.length, 0) || (backend.busy ? "still running" : "")
+        }
       }
     ]
     next()
