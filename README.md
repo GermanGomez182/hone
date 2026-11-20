@@ -22,7 +22,7 @@ selection in place.
   installed and signed in. Your text is sent to the provider you pick.
 - `wl-clipboard` (`wl-copy`, `wl-paste`), included in Omarchy
 
-No sudo, services, or downloads: Hone only runs the CLIs above, `wl-copy`/`wl-paste` and `hyprctl`.
+Hone needs no root access, background services or downloads: it only runs the CLIs above, `wl-copy`/`wl-paste` and `hyprctl`.
 
 ## Install
 
